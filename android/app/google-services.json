@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "437467363341",
+    "project_id": "chatsphere-b1f7a",
+    "storage_bucket": "chatsphere-b1f7a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:437467363341:android:7289a8ec6e0f18ca37bd44",
+        "android_client_info": {
+          "package_name": "com.example.chatsphere"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCgNizOqR4F4rx7yi70oW7RLqM2ArxKEIE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
