@@ -149,18 +149,15 @@ class _LoginScreenState extends State<LoginScreen> {
                             type: ToastificationType.success,
                             style: ToastificationStyle.flatColored,
                             autoCloseDuration: const Duration(seconds: 3),
-                            title: const Text('Login Successful'),
+                            title: const Text('Login Successful',style: TextStyle(
+                              color: Colors.black
+                            ),),
                             alignment: Alignment.topCenter,
                             primaryColor: Colors.green, 
                             backgroundColor:
                                 Colors.white, 
                             foregroundColor: Colors.black, 
 
-                            callbacks: ToastificationCallbacks(
-                              onAutoCompleteCompleted: (toastItem) {
-                                print('Toast auto-closed');
-                              },
-                            ),
                           );
 
                           setState(() => loading = false);
@@ -169,7 +166,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           toastification.show(
                             title: Text(
                               e.message.toString(),
-                              style: const TextStyle(color: Colors.white),
+                              style: const TextStyle(color: Colors.black),
                             ),
                              style: ToastificationStyle.flatColored,
                             type: ToastificationType.error,

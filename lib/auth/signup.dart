@@ -325,19 +325,39 @@ class _SignUpState extends State<SignUp> {
                             confirmPasswordController.text.trim()) {
                           toastification.show(
                             context: context,
-                            title: const Text("Passwords do not match"),
+                            title: const Text(
+                              "Passwords do not match",
+                              style: TextStyle(
+                                color: Colors.black,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
                             type: ToastificationType.error,
                             alignment: Alignment.topCenter,
+                            autoCloseDuration: const Duration(seconds: 3),
+                            backgroundColor: Colors.redAccent,
+                            foregroundColor: Colors.white,
                           );
+
                           return;
                         }
                         if (gender == null) {
                           toastification.show(
                             context: context,
-                            title: const Text("Please select gender"),
+                            title: const Text(
+                              "Please select gender",
+                              style: TextStyle(
+                                color: Colors.black,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
                             type: ToastificationType.error,
                             alignment: Alignment.topCenter,
+                            autoCloseDuration: const Duration(seconds: 3),
+                            backgroundColor: Colors.redAccent,
+                            foregroundColor: Colors.white,
                           );
+
                           return;
                         }
 
@@ -371,7 +391,7 @@ class _SignUpState extends State<SignUp> {
                             context: context,
                             title: const Text(
                               'SignUp Successful',
-                              style: TextStyle(color: Colors.white),
+                              style: TextStyle(color: Colors.black),
                             ),
                             type: ToastificationType.success,
                             alignment: Alignment.topCenter,
@@ -400,7 +420,7 @@ class _SignUpState extends State<SignUp> {
                             context: context,
                             title: Text(
                               e.message.toString(),
-                              style: const TextStyle(color: Colors.white),
+                              style: const TextStyle(color: Colors.black),
                             ),
                             style: ToastificationStyle.flatColored,
                             type: ToastificationType.error,

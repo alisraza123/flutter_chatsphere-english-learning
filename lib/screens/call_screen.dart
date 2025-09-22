@@ -36,7 +36,6 @@ class _CallScreenState extends State<CallScreen> {
     super.initState();
     _startTimer();
 
-    // 🔹 Set onDisconnect to update user status
     final userRef = dbRef.child("users/${widget.myId}");
     userRef.onDisconnect().update({
       "status": "offline",
@@ -44,7 +43,6 @@ class _CallScreenState extends State<CallScreen> {
       "incomingCallId": null,
     });
 
-    // 🔹 Listen for remote end signal
     _statusSub = dbRef.child("calls/${widget.callId}/status").onValue.listen(
       (event) async {
         final status = event.snapshot.value;
@@ -73,7 +71,6 @@ class _CallScreenState extends State<CallScreen> {
 
     const int requiredDuration = 30;
 
-    // Increment talks only by caller if duration >= 30 sec
     if (isCaller && _seconds >= requiredDuration) {
       try {
         final Map<String, dynamic> updates = {
@@ -87,7 +84,6 @@ class _CallScreenState extends State<CallScreen> {
       }
     }
 
-    // Local cleanup
     try {
       await widget.callService.safeDispose();
       await dbRef.child("users/${widget.myId}").update({
@@ -98,7 +94,6 @@ class _CallScreenState extends State<CallScreen> {
       debugPrint(" Local Cleanup Failed: $e");
     }
 
-    // Room deletion
     if (isCaller) {
       Future.delayed(const Duration(seconds: 2), () {
         dbRef.child("calls/${widget.callId}").remove().catchError((e) {
@@ -111,7 +106,6 @@ class _CallScreenState extends State<CallScreen> {
       });
     }
 
-    // Navigate to Home
     Future.microtask(() {
       if (mounted) Navigator.pushNamedAndRemoveUntil(context, homeRoute, (route) => false);
     });
@@ -126,7 +120,6 @@ class _CallScreenState extends State<CallScreen> {
       debugPrint(" Status Update Error: $e");
     }
 
-    // Cancel onDisconnect & update status manually
     try {
       await dbRef.child("users/${widget.myId}").onDisconnect().cancel();
       await dbRef.child("users/${widget.myId}").update({
@@ -156,86 +149,28 @@ class _CallScreenState extends State<CallScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isMicOn = widget.callService.isMicOn;
+    final isSpeakerOn = widget.callService.isSpeakerOn;
+
     return Scaffold(
       backgroundColor: Colors.black,
       body: SafeArea(
         child: Column(
           children: [
-            // Top UI (unchanged)
             Expanded(
               flex: 2,
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  TweenAnimationBuilder(
-                    tween: Tween<double>(begin: 0.9, end: 1.0),
-                    duration: const Duration(seconds: 2),
-                    curve: Curves.easeInOut,
-                    builder: (context, double value, child) {
-                      return Transform.scale(
-                        scale: value,
-                        child: Container(
-                          width: 120,
-                          height: 120,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(color: Colors.green.withOpacity(0.5), width: 2),
-                            boxShadow: [
-                              BoxShadow(color: Colors.green.withOpacity(0.3), blurRadius: 15, spreadRadius: 5),
-                            ],
-                          ),
-                          child: CircleAvatar(
-                            backgroundColor: Colors.transparent,
-                            backgroundImage: const AssetImage("assets/profile.png"),
-                            child: Container(
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                gradient: RadialGradient(
-                                  colors: [Colors.transparent, Colors.green.withOpacity(0.2)],
-                                  stops: const [0.7, 1.0],
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
                   const SizedBox(height: 20),
                   Text(widget.peerId, style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w500)),
                   const SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      TweenAnimationBuilder(
-                        tween: Tween<double>(begin: 0.5, end: 1.0),
-                        duration: const Duration(milliseconds: 1000),
-                        curve: Curves.easeInOut,
-                        builder: (context, double value, child) {
-                          return Container(
-                            width: 10,
-                            height: 10,
-                            margin: const EdgeInsets.only(right: 8),
-                            decoration: BoxDecoration(
-                              color: Colors.green.withOpacity(value),
-                              shape: BoxShape.circle,
-                            ),
-                          );
-                        },
-                      ),
-                      const Text("On Call...", style: TextStyle(color: Colors.white70, fontSize: 16)),
-                    ],
-                  ),
+                  const Text("On Call...", style: TextStyle(color: Colors.white70, fontSize: 16)),
                   const SizedBox(height: 16),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    decoration: BoxDecoration(color: Colors.black.withOpacity(0.3), borderRadius: BorderRadius.circular(20)),
-                    child: Text(_formatDuration(_seconds), style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w500)),
-                  ),
+                  Text(_formatDuration(_seconds), style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w500)),
                 ],
               ),
             ),
-            // Bottom UI (unchanged)
             Expanded(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.end,
@@ -245,43 +180,72 @@ class _CallScreenState extends State<CallScreen> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
-                        // Mute
+                        // 🔇 Mute Button
                         Column(
                           children: [
                             Container(
                               width: 60,
                               height: 60,
-                              decoration: BoxDecoration(color: Colors.grey.withOpacity(0.2), shape: BoxShape.circle),
-                              child: IconButton(onPressed: () {}, icon: const Icon(Icons.mic_off, color: Colors.white)),
+                              decoration: BoxDecoration(
+                                color: isMicOn ? Colors.grey.withOpacity(0.2) : Colors.red.withOpacity(0.3),
+                                shape: BoxShape.circle,
+                              ),
+                              child: IconButton(
+                                onPressed: () async {
+                                  await widget.callService.toggleMic();
+                                  setState(() {});
+                                },
+                                icon: Icon(
+                                  isMicOn ? Icons.mic : Icons.mic_off,
+                                  color: isMicOn ? Colors.white : Colors.red,
+                                ),
+                              ),
                             ),
                             const SizedBox(height: 8),
-                            const Text("Mute", style: TextStyle(color: Colors.white70)),
+                            Text(isMicOn ? "Mute" : "Unmute", style: const TextStyle(color: Colors.white70)),
                           ],
                         ),
-                        // End
+
+                        // ❌ End Call
                         Column(
                           children: [
                             Container(
                               width: 70,
                               height: 70,
                               decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
-                              child: IconButton(onPressed: _endCallByLocalUser, icon: const Icon(Icons.call_end, color: Colors.white, size: 30)),
+                              child: IconButton(
+                                onPressed: _endCallByLocalUser,
+                                icon: const Icon(Icons.call_end, color: Colors.white, size: 30),
+                              ),
                             ),
                             const SizedBox(height: 8),
                             const Text("End", style: TextStyle(color: Colors.white70)),
                           ],
                         ),
-                        // Speaker
+
+                        // 🔊 Speaker Button
                         Column(
                           children: [
                             Container(
                               width: 60,
                               height: 60,
-                              decoration: BoxDecoration(color: Colors.grey.withOpacity(0.2), shape: BoxShape.circle),
-                              child: IconButton(onPressed: () {}, icon: const Icon(Icons.volume_up, color: Colors.white)),
+                              decoration: BoxDecoration(
+                                color: isSpeakerOn ? Colors.green.withOpacity(0.3) : Colors.grey.withOpacity(0.2),
+                                shape: BoxShape.circle,
+                              ),
+                              child: IconButton(
+                                onPressed: () async {
+                                  await widget.callService.toggleSpeaker();
+                                  setState(() {});
+                                },
+                                icon: Icon(
+                                  isSpeakerOn ? Icons.volume_up : Icons.hearing,
+                                  color: isSpeakerOn ? Colors.green : Colors.white,
+                                ),
+                              ),
                             ),
                             const SizedBox(height: 8),
-                            const Text("Speaker", style: TextStyle(color: Colors.white70)),
+                            Text("Speaker", style: TextStyle(color: Colors.white70)),
                           ],
                         ),
                       ],

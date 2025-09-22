@@ -96,7 +96,7 @@ class _ProfileUploadScreenState extends State<ProfileUploadScreen> {
         context: context,
         title: Text(
           "Upload failed: $e",
-          style: const TextStyle(color: Colors.white),
+          style: const TextStyle(color: Colors.black),
         ),
         type: ToastificationType.error,
         alignment: Alignment.topCenter,
@@ -126,7 +126,7 @@ class _ProfileUploadScreenState extends State<ProfileUploadScreen> {
         context: context,
         title: Text(
           skip ? "Skipped profile upload" : "Profile updated",
-          style: const TextStyle(color: Colors.white),
+          style: const TextStyle(color: Colors.black),
         ),
         type: ToastificationType.success,
         alignment: Alignment.topCenter,
@@ -145,7 +145,7 @@ class _ProfileUploadScreenState extends State<ProfileUploadScreen> {
     } catch (e) {
       toastification.show(
         context: context,
-        title: Text(e.toString(), style: const TextStyle(color: Colors.white)),
+        title: Text(e.toString(), style: const TextStyle(color: Colors.black)),
         type: ToastificationType.error,
         alignment: Alignment.topCenter,
         backgroundColor: Colors.red,
@@ -333,7 +333,7 @@ class _ProfileUploadScreenState extends State<ProfileUploadScreen> {
                             context: context,
                             title: const Text(
                               "Please select an image first.",
-                              style: TextStyle(color: Colors.white),
+                              style: TextStyle(color: Colors.black),
                             ),
                             type: ToastificationType.error,
                             alignment: Alignment.topCenter,

@@ -5,7 +5,9 @@ import 'package:firebase_database/firebase_database.dart';
 class CallService {
   RTCPeerConnection? _peerConnection;
   MediaStream? _localStream;
-  RTCVideoRenderer? _remoteRenderer; // nullable to handle dispose properly
+  RTCVideoRenderer? _remoteRenderer; 
+  bool _speakerOn = false;
+  bool _micOn = true; // default mic ON
 
   final dbRef = FirebaseDatabase.instance.ref();
 
@@ -15,12 +17,29 @@ class CallService {
   }
 
   RTCVideoRenderer? get remoteRenderer => _remoteRenderer;
-  
+  bool get isSpeakerOn => _speakerOn;
+  bool get isMicOn => _micOn;
 
-  /// 🔹 Initialize local mic (only audio for now)
+  /// 🔹 Initialize local mic
   Future<void> initLocalMedia() async {
     final mediaConstraints = {"audio": true, "video": false};
     _localStream = await navigator.mediaDevices.getUserMedia(mediaConstraints);
+  }
+
+  /// 🔹 Toggle Mic Mute/Unmute
+  Future<void> toggleMic() async {
+    if (_localStream != null) {
+      for (var track in _localStream!.getAudioTracks()) {
+        track.enabled = !track.enabled;
+        _micOn = track.enabled;
+      }
+    }
+  }
+
+  /// 🔹 Toggle Speaker/Earpiece
+  Future<void> toggleSpeaker() async {
+    _speakerOn = !_speakerOn;
+    await Helper.setSpeakerphoneOn(_speakerOn);
   }
 
   Future<void> safeDispose() async {
@@ -31,7 +50,7 @@ class CallService {
     }
   }
 
-  /// 🔹 Create room & signaling (Caller / Callee dono ke liye)
+  /// 🔹 Create room & signaling
   Future<void> createRoomConnection(String callId, {required bool isCaller}) async {
     final config = {
       "iceServers": [
@@ -67,7 +86,6 @@ class CallService {
     };
 
     if (isCaller) {
-      // Caller → create Offer
       final offer = await _peerConnection!.createOffer();
       await _peerConnection!.setLocalDescription(offer);
 
@@ -76,7 +94,6 @@ class CallService {
         "type": offer.type,
       });
 
-      // Listen for Answer
       dbRef.child("calls/$callId/answer").onValue.listen((event) async {
         if (event.snapshot.value != null) {
           final data = Map<String, dynamic>.from(event.snapshot.value as Map);
@@ -85,14 +102,12 @@ class CallService {
         }
       });
     } else {
-      // Callee → Listen for Offer
       final offerSnapshot = await dbRef.child("calls/$callId/offer").get();
       if (offerSnapshot.value != null) {
         final data = Map<String, dynamic>.from(offerSnapshot.value as Map);
         final offer = RTCSessionDescription(data["sdp"], data["type"]);
         await _peerConnection!.setRemoteDescription(offer);
 
-        // Create Answer
         final answer = await _peerConnection!.createAnswer();
         await _peerConnection!.setLocalDescription(answer);
 
