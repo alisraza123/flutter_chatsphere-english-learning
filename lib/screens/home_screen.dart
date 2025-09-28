@@ -4,6 +4,7 @@ import 'package:chatsphere/screens/settings_screen.dart';
 import 'package:curved_labeled_navigation_bar/curved_navigation_bar.dart';
 import 'package:curved_labeled_navigation_bar/curved_navigation_bar_item.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:lottie/lottie.dart';
@@ -26,14 +27,26 @@ class _HomeScreenState extends State<HomeScreen> {
 
   bool _isLoading = false;
   String? _activeCallId;
+  String? _targetId;
   StreamSubscription? _incomingCallListener;
+  StreamSubscription<DatabaseEvent>? statusSub;
+
+  Timer? _callTimer;
+  int _seconds = 20;
+  bool _showCancelButton = true;
+
+  int _attempts = 0;
+  final int _maxAttempts = 3;
+  Set<String> _usedUsers = {};
 
   int _currentIndex = 0;
+  late final List<Widget> _screens;
 
   @override
   void initState() {
     super.initState();
-    // ---------------- INCOMING CALL LISTENER ----------------
+    _screens = [const ProfileScreen(), const SettingsList()];
+
     _incomingCallListener = dbRef
         .child("users/${widget.myId}/incomingCallId")
         .onValue
@@ -41,18 +54,19 @@ class _HomeScreenState extends State<HomeScreen> {
           final callIdRaw = event.snapshot.value;
           final callId = callIdRaw != null ? callIdRaw.toString() : null;
           if (callId != null && mounted) {
-            // ✅ Only push if not already loading or on call
-            if (!_isLoading) {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => IncomingCallScreen(
-                    callId: callId,
-                    myId: widget.myId,
-                    callService: callService,
-                  ),
-                ),
-              );
+            if (_isLoading) {
+              cancelRandomCall(isIncoming: true);
             }
+
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => IncomingCallScreen(
+                  callId: callId,
+                  myId: widget.myId,
+                  callService: callService,
+                ),
+              ),
+            );
           }
         });
   }
@@ -60,40 +74,78 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void dispose() {
     _incomingCallListener?.cancel();
+    statusSub?.cancel();
+    _callTimer?.cancel();
     super.dispose();
   }
 
-  // ---------------- START RANDOM CALL ----------------
   Future<void> startRandomCall() async {
-    setState(() => _isLoading = true);
+    if (_isLoading) return;
 
-    Future.delayed(const Duration(seconds: 10), () {
-      if (mounted && _isLoading) {
-        setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("No user found, please try again")),
-        );
-      }
+    setState(() {
+      _isLoading = true;
+      _attempts = 0;
+      _showCancelButton = true;
     });
 
+    _usedUsers.clear();
+    await _tryNextUser();
+
+    if (!_isLoading) {
+      if (_attempts >= _maxAttempts) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("No user wants to talk, please try again"),
+          ),
+        );
+      } else if (_usedUsers.isEmpty && _attempts == 1) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("No more user available at the moment")),
+        );
+      }
+    }
+  }
+
+  Future<void> _tryNextUser() async {
+    if (!_isLoading) {
+      return;
+    }
+
+    if (_attempts >= _maxAttempts) {
+      if (mounted) setState(() => _isLoading = false);
+      return;
+    }
+
+    _attempts++;
+
     final snapshot = await dbRef.child("users").get();
-    String? targetId;
+    final List<String> idleUsers = [];
 
     for (var child in snapshot.children) {
-      final value = child.value;
-      if (child.key != widget.myId && value is Map) {
-        final data = Map<String, dynamic>.from(value);
-        if (data["callStatus"] == "idle") {
-          targetId = child.key;
-          break;
+      if (child.key != widget.myId && child.value is Map) {
+        final data = Map<String, dynamic>.from(child.value as Map);
+        if ((data["callStatus"] ?? "idle") == "idle" &&
+            !_usedUsers.contains(child.key)) {
+          if (data["incomingCallId"] == null) {
+            idleUsers.add(child.key!);
+          }
         }
       }
     }
 
-    if (targetId == null) return;
+    if (idleUsers.isEmpty) {
+      if (mounted) setState(() => _isLoading = false);
+      _attempts = _maxAttempts;
+      return;
+    }
+
+    idleUsers.shuffle();
+    final targetId = idleUsers.first;
+    _usedUsers.add(targetId);
 
     final callId = dbRef.child("calls").push().key;
     _activeCallId = callId;
+    _targetId = targetId;
 
     await dbRef.child("calls/$callId").set({
       "callerId": widget.myId,
@@ -107,19 +159,40 @@ class _HomeScreenState extends State<HomeScreen> {
     });
     await dbRef.child("users/${widget.myId}").update({"callStatus": "busy"});
 
-    dbRef.child("calls/$callId/status").onValue.listen((event) async {
+    bool callPicked = false;
+    _seconds = 20;
+
+    _callTimer?.cancel();
+    _callTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (mounted) {
+        setState(() => _seconds--);
+      }
+
+      if (_seconds <= 0) timer.cancel();
+    });
+
+    await statusSub?.cancel();
+    statusSub = dbRef.child("calls/$callId/status").onValue.listen((
+      event,
+    ) async {
       final status = event.snapshot.value?.toString();
+
       if (status == "accepted") {
+        callPicked = true;
+        _callTimer?.cancel();
+        await statusSub?.cancel();
+
         await callService.initLocalMedia();
         await callService.createRoomConnection(callId!, isCaller: true);
 
         if (mounted) {
+          setState(() => _isLoading = false);
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
               builder: (_) => CallScreen(
                 myId: uid,
-                peerId: targetId!,
+                peerId: targetId,
                 callService: callService,
                 callId: callId,
               ),
@@ -127,21 +200,65 @@ class _HomeScreenState extends State<HomeScreen> {
           );
         }
       } else if (status == "rejected") {
-        await dbRef.child("users/${widget.myId}").update({
-          "callStatus": "idle",
-        });
-        if (mounted) setState(() => _isLoading = false);
+        callPicked = false;
+        _callTimer?.cancel();
+        await statusSub?.cancel();
+
+        await _resetCall();
+
+        _tryNextUser();
       }
     });
+
+    await Future.delayed(const Duration(seconds: 20));
+
+    if (!callPicked && _isLoading && mounted) {
+      await statusSub?.cancel();
+      _callTimer?.cancel();
+
+      await _resetCall();
+
+      _tryNextUser();
+    }
   }
 
-  // ---------------- USER LIST ----------------
+  Future<void> _resetCall() async {
+    if (_activeCallId != null && _targetId != null) {
+      await dbRef.child("users/$_targetId").update({
+        "callStatus": "idle",
+        "incomingCallId": null,
+      });
+
+      await dbRef.child("users/${widget.myId}").update({"callStatus": "idle"});
+
+      await dbRef.child("calls/$_activeCallId").remove();
+    }
+    _activeCallId = null;
+    _targetId = null;
+    _seconds = 20;
+  }
+
+  Future<void> cancelRandomCall({bool isIncoming = false}) async {
+    if (mounted) {
+      setState(() => _isLoading = false);
+    }
+    _callTimer?.cancel();
+    await statusSub?.cancel();
+    await _resetCall();
+
+    if (isIncoming) {
+    } else {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Call search cancelled.")));
+    }
+  }
+
   Widget buildUserList() {
     return StreamBuilder(
       stream: dbRef.child("users").onValue,
       builder: (context, snapshot) {
         if (!snapshot.hasData || snapshot.data?.snapshot.value == null) {
-          // Show dummy tile if no data
           return _buildDummyTile();
         }
 
@@ -150,21 +267,14 @@ class _HomeScreenState extends State<HomeScreen> {
 
         final data = Map<String, dynamic>.from(rawData);
 
-        final users = data.entries
-            .where((e) {
-              final value = e.value;
-              return value is Map;
-            })
-            .where((e) {
-              final u = Map<String, dynamic>.from(e.value as Map);
-              return e.key != widget.myId &&
-                  (u["status"] ?? "offline") == "online";
-            })
-            .toList();
+        final users = data.entries.where((e) => e.value is Map).where((e) {
+          final u = Map<String, dynamic>.from(e.value as Map);
+          return e.key != widget.myId &&
+              (u["status"] ?? "offline") == "online" &&
+              (u["callStatus"] ?? "idle") == "idle";
+        }).toList();
 
-        if (users.isEmpty) {
-          return _buildDummyTile();
-        }
+        if (users.isEmpty) return _buildDummyTile();
 
         return ListView.separated(
           shrinkWrap: true,
@@ -174,7 +284,6 @@ class _HomeScreenState extends State<HomeScreen> {
           separatorBuilder: (_, __) => const SizedBox(height: 10),
           itemBuilder: (context, index) {
             final user = Map<String, dynamic>.from(users[index].value);
-
             return Padding(
               padding: const EdgeInsets.symmetric(horizontal: 10),
               child: Card(
@@ -189,14 +298,21 @@ class _HomeScreenState extends State<HomeScreen> {
                     vertical: 6,
                   ),
                   leading: CircleAvatar(
-                    radius: 28,
+                    radius: 30,
+                    backgroundColor: Colors.grey.shade200,
                     backgroundImage:
                         user["hasProfileImage"] == true &&
                             user["imageUrl"] != ""
                         ? NetworkImage(user["imageUrl"])
                         : null,
-                    child: user["hasProfileImage"] == false
-                        ? const Icon(Icons.person, size: 30)
+                    child:
+                        (user["hasProfileImage"] != true ||
+                            user["imageUrl"] == "")
+                        ? Icon(
+                            Icons.person,
+                            size: 30,
+                            color: Colors.grey.shade600,
+                          )
                         : null,
                   ),
                   title: Text(
@@ -245,7 +361,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // Dummy tile widget
   Widget _buildDummyTile() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 10),
@@ -261,7 +376,6 @@ class _HomeScreenState extends State<HomeScreen> {
           leading: CircleAvatar(
             radius: 28,
             backgroundColor: Colors.grey[300],
-
             child: Icon(Icons.person, size: 30, color: Colors.grey[600]),
           ),
           title: const Text(
@@ -276,7 +390,7 @@ class _HomeScreenState extends State<HomeScreen> {
             width: 14,
             height: 14,
             decoration: const BoxDecoration(
-              color: Colors.grey, // Offline grey dot
+              color: Colors.grey,
               shape: BoxShape.circle,
             ),
           ),
@@ -285,7 +399,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ---------------- MAIN UI ----------------
   @override
   Widget build(BuildContext context) {
     final screens = [
@@ -320,8 +433,8 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
       ),
-      ProfileScreen(),
-      SettingsList(),
+      const ProfileScreen(),
+      const SettingsList(),
     ];
 
     return SafeArea(
@@ -330,11 +443,8 @@ class _HomeScreenState extends State<HomeScreen> {
         appBar: _isLoading
             ? null
             : AppBar(
-              automaticallyImplyLeading: false,
+                automaticallyImplyLeading: false,
                 backgroundColor: Colors.grey[100],
-                // backgroundColor: _currentIndex == 1 || _currentIndex == 2
-                //     ? Colors.white
-                //     : const Color(0xFF16d7f8),
                 title: Text(
                   _currentIndex == 0
                       ? "Chat Sphere"
@@ -342,7 +452,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ? "Profile"
                       : "Settings",
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontWeight: FontWeight.bold),
+                  style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
                 centerTitle: true,
               ),
@@ -351,22 +461,32 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Lottie.asset(
-                      "assets/loader.json",
-                      width: 150,
-                      height: 150,
-                     
-                    ),
-      
+                    Lottie.asset("assets/loader.json", width: 150, height: 150),
                     const SizedBox(height: 20),
-                    const Text(
-                      "Looking for someone to connect...",
-                      style: TextStyle(
+                    Text(
+                      _activeCallId != null
+                          ? "Calling attempt $_attempts of $_maxAttempts..."
+                          : "Looking for a user...",
+                      style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
                         color: Colors.grey,
                       ),
                     ),
+                    const SizedBox(height: 10),
+                    Text(
+                      "Time left: $_seconds seconds",
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    if (_showCancelButton)
+                      ElevatedButton(
+                        onPressed: cancelRandomCall,
+                        child: const Text("Cancel"),
+                      ),
                   ],
                 ),
               )
@@ -374,10 +494,10 @@ class _HomeScreenState extends State<HomeScreen> {
         bottomNavigationBar: _isLoading
             ? null
             : CurvedNavigationBar(
-                animationCurve: Curves.easeInOut, // Smooth curve
-                animationDuration: const Duration(milliseconds: 500),
-                backgroundColor: Colors.white, // ya jo color chahiye
-                color: const Color(0XFF1ea5fe), // active bar color
+                animationCurve: Curves.easeInOut,
+                animationDuration: Duration(milliseconds: (kIsWeb) ? 500 : 600),
+                backgroundColor: Colors.white,
+                color: const Color(0XFF1ea5fe),
                 buttonBackgroundColor: const Color(0XFF1ea5fe),
                 height: 60,
                 index: _currentIndex,
@@ -407,7 +527,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       color: Colors.white,
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
-                    ), // label color
+                    ),
                   ),
                 ],
                 onTap: (i) => setState(() => _currentIndex = i),

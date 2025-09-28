@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:lottie/lottie.dart';
 import 'login.dart';
 import 'package:toastification/toastification.dart';
 
@@ -84,8 +85,8 @@ class _SignUpState extends State<SignUp> {
           fontSize: shortestSide * 0.04,
         ),
 
-        prefixIcon: Icon(icon, color: Colors.black, size: shortestSide * 0.06),
-        contentPadding: EdgeInsets.symmetric(vertical: shortestSide * 0.04),
+        prefixIcon: Icon(icon, color: Colors.black, size: shortestSide * 0.05),
+        contentPadding: EdgeInsets.symmetric(vertical: shortestSide * 0.02),
 
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(fieldRadius),
@@ -106,7 +107,7 @@ class _SignUpState extends State<SignUp> {
                   isVisible! ? Icons.visibility : Icons.visibility_off,
 
                   color: Colors.black,
-                  size: shortestSide * 0.06,
+                  size: shortestSide * 0.04,
                 ),
               )
             : null,
@@ -118,11 +119,11 @@ class _SignUpState extends State<SignUp> {
     bool isSelected = gender == value;
     return Expanded(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 4.0),
+        padding: const EdgeInsets.symmetric(horizontal: 2.0),
         child: GestureDetector(
           onTap: () => setState(() => gender = value),
           child: Container(
-            height: shortestSide * 0.1,
+            height: shortestSide * 0.08,
             decoration: BoxDecoration(
               color: isSelected ? const Color(0XFF1ea5fe) : Colors.white,
               borderRadius: BorderRadius.circular(shortestSide * 0.025),
@@ -188,7 +189,7 @@ class _SignUpState extends State<SignUp> {
           border: InputBorder.none,
           contentPadding: EdgeInsets.symmetric(
             horizontal: shortestSide * 0.03,
-            vertical: shortestSide * 0.04,
+            vertical: shortestSide * 0.03,
           ),
         ),
         items: countries.map((country) {
@@ -226,21 +227,22 @@ class _SignUpState extends State<SignUp> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Image.asset(
-                  "assets/signup.png",
-                  width: shortestSide * 0.35,
-                  height: shortestSide * 0.35,
-                ),
+                // Image.asset(
+                //   "assets/signup.png",
+                //   width: shortestSide * 0.35,
+                //   height: shortestSide * 0.35,
+                // ),
+                  Lottie.asset("assets/register.json", width: 150, height: 150),
                 SizedBox(height: verticalSpacing * 0.5),
 
-                Text(
-                  "Get Started",
-                  style: TextStyle(
-                    fontSize: shortestSide * 0.08,
-                    fontWeight: FontWeight.w900,
-                    color: Colors.black,
-                  ),
-                ),
+                // Text(
+                //   "Get Started",
+                //   style: TextStyle(
+                //     fontSize: shortestSide * 0.08,
+                //     fontWeight: FontWeight.w900,
+                //     color: Colors.black,
+                //   ),
+                // ),
                 SizedBox(height: verticalSpacing * 0.5),
                 Text(
                   "Create your new account in seconds.",
@@ -252,7 +254,7 @@ class _SignUpState extends State<SignUp> {
                 ),
                 SizedBox(height: verticalSpacing * 1.5),
 
-                // 📝 Form Fields
+                
                 _buildSimpleTextField(
                   controller: nameController,
                   hint: "Full Name",
@@ -319,7 +321,7 @@ class _SignUpState extends State<SignUp> {
                   height: shortestSide * 0.12,
                   child: ElevatedButton(
                     onPressed: () async {
-                      // Original logic preserved
+                      
                       if (formKey.currentState!.validate()) {
                         if (passwordController.text.trim() !=
                             confirmPasswordController.text.trim()) {
@@ -369,7 +371,7 @@ class _SignUpState extends State<SignUp> {
                                 password: passwordController.text.trim(),
                               );
 
-                          // Save in Realtime Database
+                          
                           await dbRef.child(userCred.user!.uid).set({
                             "name": nameController.text.trim().toUpperCase(),
                             "email": emailController.text.trim(),

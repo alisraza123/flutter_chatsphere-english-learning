@@ -29,7 +29,7 @@ class _IncomingCallScreenState extends State<IncomingCallScreen> {
   void initState() {
     super.initState();
 
-    // 🔔 Listen if caller cancels (call node delete ho gaya)
+    
     dbRef.child("calls/${widget.callId}").onValue.listen((event) {
       if (!event.snapshot.exists) {
         _navigateToHome();
@@ -48,20 +48,20 @@ class _IncomingCallScreenState extends State<IncomingCallScreen> {
   }
 
   Future<void> rejectCall() async {
-    // Caller id fetch
+    
     final snap = await dbRef.child("calls/${widget.callId}/callerId").get();
     final callerId = snap.value?.toString();
 
-    // 1. Call node delete
+    
     await dbRef.child("calls/${widget.callId}").remove();
 
-    // 2. Reset callee status
+    
     await dbRef.child("users/${widget.myId}").update({
       "callStatus": "idle",
       "incomingCallId": null,
     });
 
-    // 3. Reset caller status
+    
     if (callerId != null) {
       await dbRef.child("users/$callerId").update({
         "callStatus": "idle",

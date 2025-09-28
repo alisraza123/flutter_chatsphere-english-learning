@@ -51,7 +51,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                         fontSize: shortestSide * 0.035, color: Colors.black54),
                   ),
                   SizedBox(height: shortestSide * 0.03),
-                  // Email Field
+                  
                   _buildTextField(
                     controller: emailController,
                     hint: "Email Address",
@@ -61,14 +61,14 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                     shortestSide: shortestSide,
                   ),
                   SizedBox(height: shortestSide * 0.04),
-                  // Submit Button
+                  
                   SizedBox(
                     width: double.infinity,
                     height: shortestSide * 0.12,
                     child: ElevatedButton(
                       onPressed: () {
                         if (formKey.currentState!.validate()) {
-                          // UI only
+                          
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
                                 content: Text(
@@ -92,7 +92,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                     ),
                   ),
                   SizedBox(height: shortestSide * 0.03),
-                  // Back to Login
+                  
                   TextButton(
                     onPressed: () {
                       Navigator.push(

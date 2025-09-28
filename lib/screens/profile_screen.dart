@@ -1,3 +1,4 @@
+import 'package:chatsphere/screens/profile_upload_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
@@ -21,18 +22,21 @@ class ProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: FutureBuilder<Map<String, dynamic>?>(
         future: _fetchUserData(),
         builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(
-              child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF1ea5fe)),
-              ),
-            );
-          }
+          
+          
+          
+          
+          
+          
+          
+          
 
           if (!snapshot.hasData || snapshot.data == null) {
             return Center(
@@ -60,15 +64,13 @@ class ProfileScreen extends StatelessWidget {
             builder: (context, constraints) {
               final bool isPortrait =
                   constraints.maxHeight > constraints.maxWidth;
-              final double avatarSize = isPortrait
-                  ? constraints.maxWidth * 0.25
-                  : constraints.maxHeight * 0.25;
+          
 
               return SingleChildScrollView(
                 padding: EdgeInsets.zero,
                 child: Column(
                   children: [
-                    // Premium Header Section
+                    
                     Container(
                       width: double.infinity,
                       padding: EdgeInsets.only(
@@ -90,36 +92,58 @@ class ProfileScreen extends StatelessWidget {
                       ),
                       child: Column(
                         children: [
-                          // Profile Avatar with decorative border
-                          Container(
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              border: Border.all(color: Colors.white, width: 4),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.1),
-                                  blurRadius: 10,
-                                  offset: Offset(0, 5),
+                          
+                          LayoutBuilder(
+                            builder: (context, constraints) {
+                              double avatarSize =
+                                  constraints.maxWidth *
+                                  0.35; 
+
+                              return Center(
+                                child: GestureDetector(
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) =>
+                                            ProfileUploadScreen(uid: uid),
+                                      ),
+                                    );
+                                  },
+                                  child: Container(
+                                    width: avatarSize,
+                                    height: avatarSize,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                    
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withOpacity(0.2),
+                                          blurRadius: 12,
+                                          offset: const Offset(0, 6),
+                                        ),
+                                      ],
+                                    ),
+                                    padding: const EdgeInsets.all(
+                                      4,
+                                    ), 
+                                    child: CircleAvatar(
+                                      backgroundColor: Colors.white,
+                                      backgroundImage: imageUrl.isNotEmpty
+                                          ? NetworkImage(imageUrl)
+                                          : const AssetImage(
+                                                  "assets/default_avatar.png",
+                                                )
+                                                as ImageProvider,
+                                    ),
+                                  ),
                                 ),
-                              ],
-                            ),
-                            child: CircleAvatar(
-                              radius: avatarSize / 2,
-                              backgroundColor: Colors.white,
-                              child: CircleAvatar(
-                                radius: (avatarSize / 2) - 4,
-                                backgroundImage: imageUrl.isNotEmpty
-                                    ? NetworkImage(imageUrl)
-                                    : const AssetImage(
-                                            "assets/default_avatar.png",
-                                          )
-                                          as ImageProvider,
-                              ),
-                            ),
+                              );
+                            },
                           ),
                           SizedBox(height: 20),
 
-                          // Name with edit button
+                          
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
@@ -163,7 +187,7 @@ class ProfileScreen extends StatelessWidget {
                           ),
                           SizedBox(height: 8),
 
-                          // Email
+                          
                           Text(
                             email,
                             textAlign: TextAlign.center,
@@ -180,7 +204,7 @@ class ProfileScreen extends StatelessWidget {
                       ),
                     ),
 
-                    // Transform info section to appear floating
+                    
                     Transform.translate(
                       offset: Offset(0, -20),
                       child: Container(
@@ -200,7 +224,7 @@ class ProfileScreen extends StatelessWidget {
                         ),
                         child: Column(
                           children: [
-                            // Stats row
+                            
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                               children: [
@@ -218,7 +242,7 @@ class ProfileScreen extends StatelessWidget {
                             ),
                             SizedBox(height: 20),
 
-                            // Info Section
+                            
                             _buildInfoSection(
                               context,
                               gender: gender,
@@ -231,12 +255,12 @@ class ProfileScreen extends StatelessWidget {
 
                     SizedBox(height: 20),
 
-                    // Buttons Section
+                    
                     Padding(
                       padding: EdgeInsets.symmetric(horizontal: 20),
                       child: Column(
                         children: [
-                          // Change Password
+                          
                           Container(
                             width: double.infinity,
                             child: ElevatedButton(
@@ -279,27 +303,83 @@ class ProfileScreen extends StatelessWidget {
                           ),
                           SizedBox(height: 15),
 
-                          // Sign Out
+                          
                           Container(
                             width: double.infinity,
                             child: ElevatedButton(
                               onPressed: () async {
-                                final user = FirebaseAuth.instance.currentUser;
-                                if (user != null) {
-                                  final uid = user.uid;
-                                  await FirebaseDatabase.instance
-                                      .ref("users/$uid")
-                                      .update({
-                                        "status": "offline",
-                                        "callStatus": "idle",
-                                        "incomingCallId": null,
-                                      });
-                                  await FirebaseAuth.instance.signOut();
-                                }
-                                Navigator.pushReplacementNamed(
-                                  context,
-                                  '/login',
+                                final shouldLogout = await showDialog<bool>(
+                                  context: context,
+                                  builder: (context) {
+                                    return AlertDialog(
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(16),
+                                      ),
+                                      title: Row(
+                                        children: [
+                                          Text(
+                                            "Confirm Sign Out",
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      content: Text(
+                                        "Are you sure you want to sign out?",
+                                        style: TextStyle(fontSize: 15),
+                                      ),
+                                      actionsPadding: EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                        vertical: 8,
+                                      ),
+                                      actions: [
+                                        TextButton(
+                                          style: TextButton.styleFrom(
+                                            foregroundColor:
+                                                Colors.grey.shade700,
+                                          ),
+                                          onPressed: () =>
+                                              Navigator.pop(context, false),
+                                          child: Text("No"),
+                                        ),
+                                        ElevatedButton(
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: Colors.redAccent,
+                                            foregroundColor: Colors.white,
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                            ),
+                                          ),
+                                          onPressed: () =>
+                                              Navigator.pop(context, true),
+                                          child: Text("Yes"),
+                                        ),
+                                      ],
+                                    );
+                                  },
                                 );
+
+                                if (shouldLogout == true) {
+                                  final user =
+                                      FirebaseAuth.instance.currentUser;
+                                  if (user != null) {
+                                    final uid = user.uid;
+                                    await FirebaseDatabase.instance
+                                        .ref("users/$uid")
+                                        .update({
+                                          "status": "offline",
+                                          "callStatus": "idle",
+                                          "incomingCallId": null,
+                                        });
+                                    await FirebaseAuth.instance.signOut();
+                                  }
+                                  Navigator.pushReplacementNamed(
+                                    context,
+                                    '/login',
+                                  );
+                                }
                               },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.redAccent,
@@ -369,7 +449,7 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  /// Info Section (Gender, Country)
+  
   Widget _buildInfoSection(
     BuildContext context, {
     required String gender,
@@ -421,7 +501,7 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  /// Edit Dialog
+  
   void _showEditDialog(BuildContext context, String title, String hint) {
     final TextEditingController controller = TextEditingController();
     showDialog(

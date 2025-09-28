@@ -4,6 +4,7 @@ import 'package:chatsphere/screens/profile_upload_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
+import 'package:lottie/lottie.dart';
 import 'package:toastification/toastification.dart';
 import 'signup.dart';
 
@@ -41,11 +42,12 @@ class _LoginScreenState extends State<LoginScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Image.asset(
-                    "assets/login.png",
-                    width: shortestSide * 0.6,
-                    height: shortestSide * 0.6,
-                  ),
+                  // Image.asset(
+                  //   "assets/login.png",
+                  //   width: shortestSide * 0.6,
+                  //   height: shortestSide * 0.6,
+                  // ),
+                  Lottie.asset("assets/login.json", width: 200, height: 200),
                   SizedBox(height: shortestSide * 0.05),
 
                   _buildTextField(

@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 
 class IntroductionScreen extends StatefulWidget {
- final VoidCallback? onFinish; // optional callback
+ final VoidCallback? onFinish; 
 
   const IntroductionScreen({Key? key, this.onFinish}) : super(key: key);
   @override
@@ -94,7 +94,7 @@ void _onFinish() {
                 },
               ),
             ),
-            // Bottom Row: Skip, Indicator, Next/Finish
+            
             Padding(
               padding: EdgeInsets.symmetric(
                 horizontal: screenWidth * 0.04,
@@ -103,7 +103,7 @@ void _onFinish() {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  // Skip Button
+                  
                   _currentIndex == _pages.length - 1
                       ? SizedBox(width: screenWidth * 0.2)
                       : TextButton(
@@ -126,7 +126,7 @@ void _onFinish() {
                             ),
                           ),
                         ),
-                  // Page Indicator
+                  
                   Expanded(
                     child: Center(
                       child: SmoothPageIndicator(
@@ -141,7 +141,7 @@ void _onFinish() {
                       ),
                     ),
                   ),
-                  // Next / Finish Button
+                  
                   TextButton(
                     onPressed: _currentIndex == _pages.length - 1
                         ? _onFinish

@@ -7,7 +7,7 @@ class CallService {
   MediaStream? _localStream;
   RTCVideoRenderer? _remoteRenderer; 
   bool _speakerOn = false;
-  bool _micOn = true; // default mic ON
+  bool _micOn = true; 
 
   final dbRef = FirebaseDatabase.instance.ref();
 
@@ -20,13 +20,13 @@ class CallService {
   bool get isSpeakerOn => _speakerOn;
   bool get isMicOn => _micOn;
 
-  /// 🔹 Initialize local mic
+  
   Future<void> initLocalMedia() async {
     final mediaConstraints = {"audio": true, "video": false};
     _localStream = await navigator.mediaDevices.getUserMedia(mediaConstraints);
   }
 
-  /// 🔹 Toggle Mic Mute/Unmute
+  
   Future<void> toggleMic() async {
     if (_localStream != null) {
       for (var track in _localStream!.getAudioTracks()) {
@@ -36,7 +36,7 @@ class CallService {
     }
   }
 
-  /// 🔹 Toggle Speaker/Earpiece
+  
   Future<void> toggleSpeaker() async {
     _speakerOn = !_speakerOn;
     await Helper.setSpeakerphoneOn(_speakerOn);
@@ -50,7 +50,7 @@ class CallService {
     }
   }
 
-  /// 🔹 Create room & signaling
+  
   Future<void> createRoomConnection(String callId, {required bool isCaller}) async {
     final config = {
       "iceServers": [
@@ -60,21 +60,21 @@ class CallService {
 
     _peerConnection = await createPeerConnection(config);
 
-    // 🔹 Add local tracks
+    
     if (_localStream != null) {
       for (var track in _localStream!.getTracks()) {
         await _peerConnection!.addTrack(track, _localStream!);
       }
     }
 
-    // 🔹 Remote stream
+    
     _peerConnection!.onTrack = (event) {
       if (event.streams.isNotEmpty && _remoteRenderer != null) {
         _remoteRenderer?.srcObject = event.streams[0];
       }
     };
 
-    // 🔹 ICE Candidate Handling
+    
     _peerConnection!.onIceCandidate = (candidate) {
       if (candidate.candidate != null) {
         dbRef.child("calls/$callId/candidates").push().set({
@@ -118,7 +118,7 @@ class CallService {
       }
     }
 
-    // 🔹 Listen for ICE candidates from remote
+    
     dbRef.child("calls/$callId/candidates").onChildAdded.listen((event) async {
       final data = Map<String, dynamic>.from(event.snapshot.value as Map);
       final candidate = RTCIceCandidate(
@@ -130,7 +130,7 @@ class CallService {
     });
   }
 
-  /// 🔹 Cleanup resources safely
+  
   Future<void> dispose() async {
     try {
       if (_localStream != null) {

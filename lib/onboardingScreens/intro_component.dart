@@ -20,7 +20,7 @@ class IntroComponent extends StatelessWidget {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        // Image responsive
+        
         Image.asset(
           imagePath,
           height: screenHeight * 0.4,
@@ -28,7 +28,7 @@ class IntroComponent extends StatelessWidget {
           fit: BoxFit.contain,
         ),
         SizedBox(height: screenHeight * 0.03),
-        // Title
+        
         Text(
           title,
           textAlign: TextAlign.center,
@@ -38,7 +38,7 @@ class IntroComponent extends StatelessWidget {
           ),
         ),
         SizedBox(height: screenHeight * 0.015),
-        // Description
+        
         Padding(
           padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.1),
           child: Text(
