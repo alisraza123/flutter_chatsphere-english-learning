@@ -125,7 +125,8 @@ class _HomeScreenState extends State<HomeScreen> {
       if (child.key != widget.myId && child.value is Map) {
         final data = Map<String, dynamic>.from(child.value as Map);
         if ((data["callStatus"] ?? "idle") == "idle" &&
-            !_usedUsers.contains(child.key)) {
+            !_usedUsers.contains(child.key) &&
+            (data["status"] == "online")) {
           if (data["incomingCallId"] == null) {
             idleUsers.add(child.key!);
           }
