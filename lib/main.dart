@@ -1,4 +1,5 @@
 import 'package:chatsphere/onboardingScreens/introduction_screen.dart';
+import 'package:chatsphere/proFeatures/pro_features_screen.dart';
 import 'package:chatsphere/screens/home_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -20,7 +21,7 @@ void main() async {
       rethrow;
     }
   }
-
+  
   runApp(const MyApp());
 }
 
@@ -48,6 +49,7 @@ class MyApp extends StatelessWidget {
           '/homepage': (context) => HomeScreen(myId: uid),
           '/login': (context) => LoginScreen(),
           '/signup': (context) => SignUp(),
+           '/pro': (context) => PremiumScreen(),
         },
         home: FutureBuilder<bool>(
           future: checkIntroSeen(),

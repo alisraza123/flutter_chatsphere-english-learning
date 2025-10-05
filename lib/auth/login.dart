@@ -1,3 +1,4 @@
+import 'package:chatsphere/appToast/appToast.dart';
 import 'package:chatsphere/auth/forgot_password.dart';
 import 'package:chatsphere/screens/home_screen.dart';
 import 'package:chatsphere/screens/profile_upload_screen.dart';
@@ -5,7 +6,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
-import 'package:toastification/toastification.dart';
 import 'signup.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -42,11 +42,6 @@ class _LoginScreenState extends State<LoginScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // Image.asset(
-                  //   "assets/login.png",
-                  //   width: shortestSide * 0.6,
-                  //   height: shortestSide * 0.6,
-                  // ),
                   Lottie.asset("assets/login.json", width: 200, height: 200),
                   SizedBox(height: shortestSide * 0.05),
 
@@ -112,20 +107,25 @@ class _LoginScreenState extends State<LoginScreen> {
                                 password: passwordController.text.trim(),
                               );
                           String uid = userCred.user!.uid;
+
+                          
                           FirebaseDatabase.instance.ref("users/$uid").update({
                             "status": "online",
                             "callStatus": "idle",
                             "incomingCallId": null,
                           });
+
+                          
                           FirebaseDatabase.instance
-                              .ref("users/$uid/status")
+                              .ref(
+                                "users/$uid",
+                              ) 
                               .onDisconnect()
                               .update({
                                 "status": "offline",
                                 "callStatus": "idle",
                                 "incomingCallId": null,
                               });
-                          ;
 
                           DatabaseEvent snap = await dbRef.child(uid).once();
 
@@ -147,44 +147,12 @@ class _LoginScreenState extends State<LoginScreen> {
                             );
                           }
 
-                          toastification.show(
-                            type: ToastificationType.success,
-                            style: ToastificationStyle.flatColored,
-                            autoCloseDuration: const Duration(seconds: 3),
-                            title: const Text('Login Successful',style: TextStyle(
-                              color: Colors.black
-                            ),),
-                            alignment: Alignment.topCenter,
-                            primaryColor: Colors.green, 
-                            backgroundColor:
-                                Colors.white, 
-                            foregroundColor: Colors.black, 
-
-                          );
+                         AppToast.showSuccess("Login Successful");
 
                           setState(() => loading = false);
                         } on FirebaseAuthException catch (e) {
                           setState(() => loading = false);
-                          toastification.show(
-                            title: Text(
-                              e.message.toString(),
-                              style: const TextStyle(color: Colors.black),
-                            ),
-                             style: ToastificationStyle.flatColored,
-                            type: ToastificationType.error,
-                            alignment: Alignment.topCenter,
-                            showProgressBar: false,
-                            backgroundColor: Colors.red,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 12,
-                            ),
-                            borderRadius: BorderRadius.circular(12),
-                            autoCloseDuration: const Duration(
-                              seconds: 3,
-                            ), 
-                          );
+                         AppToast.showError( e.message.toString());
                         }
                       },
                       style: ElevatedButton.styleFrom(

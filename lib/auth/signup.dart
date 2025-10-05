@@ -1,9 +1,9 @@
+import 'package:chatsphere/appToast/appToast.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:lottie/lottie.dart';
 import 'login.dart';
-import 'package:toastification/toastification.dart';
 
 class SignUp extends StatefulWidget {
   const SignUp({super.key});
@@ -232,7 +232,7 @@ class _SignUpState extends State<SignUp> {
                 //   width: shortestSide * 0.35,
                 //   height: shortestSide * 0.35,
                 // ),
-                  Lottie.asset("assets/register.json", width: 150, height: 150),
+                Lottie.asset("assets/register.json", width: 150, height: 150),
                 SizedBox(height: verticalSpacing * 0.5),
 
                 // Text(
@@ -254,7 +254,6 @@ class _SignUpState extends State<SignUp> {
                 ),
                 SizedBox(height: verticalSpacing * 1.5),
 
-                
                 _buildSimpleTextField(
                   controller: nameController,
                   hint: "Full Name",
@@ -321,44 +320,15 @@ class _SignUpState extends State<SignUp> {
                   height: shortestSide * 0.12,
                   child: ElevatedButton(
                     onPressed: () async {
-                      
                       if (formKey.currentState!.validate()) {
                         if (passwordController.text.trim() !=
                             confirmPasswordController.text.trim()) {
-                          toastification.show(
-                            context: context,
-                            title: const Text(
-                              "Passwords do not match",
-                              style: TextStyle(
-                                color: Colors.black,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            type: ToastificationType.error,
-                            alignment: Alignment.topCenter,
-                            autoCloseDuration: const Duration(seconds: 3),
-                            backgroundColor: Colors.redAccent,
-                            foregroundColor: Colors.white,
-                          );
+                          AppToast.showError("Passwords do not match");
 
                           return;
                         }
                         if (gender == null) {
-                          toastification.show(
-                            context: context,
-                            title: const Text(
-                              "Please select gender",
-                              style: TextStyle(
-                                color: Colors.black,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            type: ToastificationType.error,
-                            alignment: Alignment.topCenter,
-                            autoCloseDuration: const Duration(seconds: 3),
-                            backgroundColor: Colors.redAccent,
-                            foregroundColor: Colors.white,
-                          );
+                          AppToast.showInfo("Please select gender");
 
                           return;
                         }
@@ -371,7 +341,6 @@ class _SignUpState extends State<SignUp> {
                                 password: passwordController.text.trim(),
                               );
 
-                          
                           await dbRef.child(userCred.user!.uid).set({
                             "name": nameController.text.trim().toUpperCase(),
                             "email": emailController.text.trim(),
@@ -383,32 +352,13 @@ class _SignUpState extends State<SignUp> {
                             "callStatus": "idle",
                             "talks": 0,
                             "level": 1,
-                            "isAvailableForCall": true,
+                            "isAvailableForCall": false,
                             "incomingCallId": null,
                           });
 
                           setState(() => loading = false);
 
-                          toastification.show(
-                            context: context,
-                            title: const Text(
-                              'SignUp Successful',
-                              style: TextStyle(color: Colors.black),
-                            ),
-                            type: ToastificationType.success,
-                            alignment: Alignment.topCenter,
-                            showProgressBar: true,
-                            primaryColor: Colors.green,
-                            backgroundColor: Colors.green[700],
-                            style: ToastificationStyle.flatColored,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 12,
-                            ),
-                            borderRadius: BorderRadius.circular(12),
-                            autoCloseDuration: const Duration(seconds: 3),
-                          );
+                          AppToast.showSuccess("SignUp Successful");
 
                           Navigator.pushReplacement(
                             context,
@@ -418,25 +368,7 @@ class _SignUpState extends State<SignUp> {
                           );
                         } on FirebaseAuthException catch (e) {
                           setState(() => loading = false);
-                          toastification.show(
-                            context: context,
-                            title: Text(
-                              e.message.toString(),
-                              style: const TextStyle(color: Colors.black),
-                            ),
-                            style: ToastificationStyle.flatColored,
-                            type: ToastificationType.error,
-                            alignment: Alignment.topCenter,
-                            showProgressBar: false,
-                            backgroundColor: Colors.red,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 12,
-                            ),
-                            borderRadius: BorderRadius.circular(12),
-                            autoCloseDuration: const Duration(seconds: 3),
-                          );
+                          AppToast.showError(e.message.toString());
                         }
                       }
                     },

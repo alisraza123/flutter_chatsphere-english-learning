@@ -1,18 +1,27 @@
 import 'package:flutter/material.dart';
 
-// Convert StatelessWidget to StatefulWidget to manage the expansion state of tiles
+
+
+
 class SettingsList extends StatefulWidget {
-  const SettingsList({super.key});
+  final bool isAvailableForCall;
+  final Function(bool) onAvailabilityChanged;
+
+  const SettingsList({
+    super.key,
+    required this.isAvailableForCall,
+    required this.onAvailabilityChanged,
+  });
 
   @override
   State<SettingsList> createState() => _SettingsListState();
 }
 
 class _SettingsListState extends State<SettingsList> {
-  // State variables to manage which tile is currently expanded
-  String _expandedTile = ''; // Stores the title of the currently open tile
+  
+  String _expandedTile = ''; 
 
-  // Dummy beautiful information for each section
+  
   static const Map<String, String> _infoData = {
     "Privacy":
         "We prioritize your security. All calls are end-to-end encrypted, ensuring your conversations remain private. Your data is never sold or shared with third parties. We strictly follow GDPR and CCPA compliance to give you complete control over your information.",
@@ -22,16 +31,16 @@ class _SettingsListState extends State<SettingsList> {
         "Need assistance? Visit our dedicated knowledge base for guides and troubleshooting tips. For direct help, use the 'Contact Us' form. Our 24/7 support team is committed to resolving your queries within 4 hours.",
   };
 
-  // --- Helper Widget: Divider ---
+  
   Widget _divider() => Padding(
         padding: const EdgeInsets.symmetric(horizontal: 15),
         child: Divider(height: 1, color: Colors.grey.shade200),
       );
 
-  // --- Helper Widget: Expandable Subtitle ---
+  
   Widget _buildExpandableSubtitle(String title) {
     if (_expandedTile == title) {
-      // Show the beautiful info if this tile is the expanded one
+      
       return Padding(
         padding: const EdgeInsets.only(top: 8.0, bottom: 8.0),
         child: Text(
@@ -39,23 +48,24 @@ class _SettingsListState extends State<SettingsList> {
           style: TextStyle(
             color: Colors.grey.shade600,
             fontSize: 14,
-            height: 1.5, // Better readability
+            height: 1.5, 
           ),
         ),
       );
     }
-    return const SizedBox.shrink(); // Hide the subtitle if not expanded
+    return const SizedBox.shrink(); 
   }
 
-  // --- Helper Widget: Main Tile Structure ---
+  
   Widget _buildTile({
     required IconData icon,
     required String title,
     String? subtitle,
-    VoidCallback? onTap, // onTap is now optional, used for non-expandable tiles
+    VoidCallback? onTap, 
+    Widget? trailingWidget,
   }) {
-    // If subtitle is not provided, this is a fixed tile (like App Version).
-    // If subtitle is provided, this is an expandable tile.
+    
+    
     final isExpandable = _infoData.containsKey(title);
 
     return Column(
@@ -87,56 +97,57 @@ class _SettingsListState extends State<SettingsList> {
                       TextStyle(color: Colors.grey.shade600, fontSize: 14),
                 )
               : null,
-          trailing: isExpandable
-              ? Container(
-                  width: 30,
-                  height: 30,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade100,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    // Change icon based on expansion state
-                    _expandedTile == title
-                        ? Icons.keyboard_arrow_down
-                        : Icons.arrow_forward_ios,
-                    size: 14,
-                    color: Colors.grey.shade600,
-                  ),
-                )
-              : (onTap != null
-                  ? Container(
-                      width: 30,
-                      height: 30,
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade100,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        Icons.arrow_forward_ios,
-                        size: 14,
-                        color: Colors.grey.shade600,
-                      ),
-                    )
-                  : null), // Handle App Version/Developers tile which has a subtitle but no onTap
+          trailing: trailingWidget ?? 
+                    (isExpandable
+                    ? Container(
+                        width: 30,
+                        height: 30,
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade100,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          
+                          _expandedTile == title
+                              ? Icons.keyboard_arrow_down
+                              : Icons.arrow_forward_ios,
+                          size: 14,
+                          color: Colors.grey.shade600,
+                        ),
+                      )
+                    : (onTap != null
+                        ? Container(
+                            width: 30,
+                            height: 30,
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade100,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.arrow_forward_ios,
+                              size: 14,
+                              color: Colors.grey.shade600,
+                            ),
+                          )
+                        : null)), 
 
-          // Toggle expansion on tap
+          
           onTap: isExpandable
               ? () {
                   setState(() {
                     if (_expandedTile == title) {
-                      _expandedTile = ''; // Collapse if already open
+                      _expandedTile = ''; 
                     } else {
-                      _expandedTile = title; // Expand the clicked tile
+                      _expandedTile = title; 
                     }
                   });
                 }
-              : onTap, // Use provided onTap for non-expandable tiles
+              : onTap, 
         ),
         
-        // **********************************
-        // Insert the expandable subtitle area
-        // **********************************
+        
+        
+        
         if (isExpandable)
           Padding(
             padding: const EdgeInsets.only(left: 15, right: 15, bottom: 15),
@@ -156,9 +167,8 @@ class _SettingsListState extends State<SettingsList> {
             child: ListView(
               padding: const EdgeInsets.all(20),
               children: [
-                // ----------------------------------------------------
-                // FIRST SECTION (Expandable Tiles)
-                // ----------------------------------------------------
+                
+                
                 Container(
                   decoration: BoxDecoration(
                     color: Colors.white,
@@ -173,27 +183,49 @@ class _SettingsListState extends State<SettingsList> {
                   ),
                   child: Column(
                     children: [
-                      // 1. Privacy Tile (Now Expandable)
+                       
+                       _buildTile(
+                        icon: Icons.phone_callback_outlined,
+                        title: "Incoming Calls",
+                        subtitle: widget.isAvailableForCall 
+                            ? "Accepting incoming calls" 
+                            : "Ignoring incoming calls",
+                        trailingWidget: Transform.scale(
+                          scale: 0.8,
+                          child: Switch(
+                            value: widget.isAvailableForCall,
+                            onChanged: widget.onAvailabilityChanged,
+                            activeColor: Colors.white,
+                            activeTrackColor: const Color(0XFF1ea5fe),
+                            inactiveThumbColor: Colors.grey.shade300,
+                            inactiveTrackColor: Colors.grey.shade400,
+                          ),
+                        ),
+                      ),
+                      _divider(),
+                      
+
+                      
                       _buildTile(
                         icon: Icons.lock_outline,
                         title: "Privacy",
-                        // onTap is handled internally for expansion
+                        
                       ),
                       _divider(),
 
-                      // 2. Notifications Tile (Now Expandable)
+                      
                       _buildTile(
                         icon: Icons.notifications_none,
                         title: "Notifications",
-                        // onTap is handled internally for expansion
+                        
                       ),
                       _divider(),
 
-                      // 3. Help & Support Tile (Now Expandable)
+                      
                       _buildTile(
                         icon: Icons.help_outline,
                         title: "Help & Support",
-                        // onTap is handled internally for expansion
+                        
                       ),
                     ],
                   ),
@@ -201,25 +233,20 @@ class _SettingsListState extends State<SettingsList> {
 
                 const SizedBox(height: 25),
 
-                // ----------------------------------------------------
-                // ABOUT HEADER
-                // ----------------------------------------------------
+                
+                
                 Padding(
                   padding: const EdgeInsets.only(left: 15, bottom: 10),
                   child: Text(
-                    "ABOUT",
+                    "ACCOUNT & GENERAL",
                     style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.grey.shade600,
-                      letterSpacing: 1.2,
+                      color: Colors.grey.shade500,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
                     ),
                   ),
                 ),
-
-                // ----------------------------------------------------
-                // SECOND SECTION (Fixed Tiles)
-                // ----------------------------------------------------
+                
                 Container(
                   decoration: BoxDecoration(
                     color: Colors.white,
@@ -234,21 +261,29 @@ class _SettingsListState extends State<SettingsList> {
                   ),
                   child: Column(
                     children: [
+                      
                       _buildTile(
-                        icon: Icons.info_outline,
-                        title: "App Version",
-                        subtitle: "v1.0.0",
+                        icon: Icons.storage_outlined,
+                        title: "Data and Storage",
+                        subtitle: "Manage media download settings",
+                        onTap: () {
+                           
+                        },
                       ),
                       _divider(),
+                    
                       _buildTile(
-                        icon: Icons.people_outline,
-                        title: "Developers",
-                        subtitle: "Hassan Raza, Team XYZ",
+                        icon: Icons.language_outlined,
+                        title: "Language",
+                        subtitle: "English (Default)",
+                        onTap: () {
+                          
+                        },
                       ),
                     ],
                   ),
                 ),
-
+                
                 const SizedBox(height: 30),
               ],
             ),

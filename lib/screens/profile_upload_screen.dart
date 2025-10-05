@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 import 'dart:io' as io;
+import 'package:chatsphere/appToast/appToast.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -8,7 +9,6 @@ import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
 import 'package:firebase_database/firebase_database.dart';
 import 'package:chatsphere/screens/home_screen.dart';
-import 'package:toastification/toastification.dart';
 import 'dart:ui';
 
 const Color kLightBackground = Color(0xFFEFEFF4);
@@ -82,20 +82,7 @@ class _ProfileUploadScreenState extends State<ProfileUploadScreen> {
         throw Exception(data["error"]["message"]);
       }
     } catch (e) {
-      toastification.show(
-        context: context,
-        title: Text(
-          "Upload failed: $e",
-          style: const TextStyle(color: Colors.black),
-        ),
-        type: ToastificationType.error,
-        alignment: Alignment.topCenter,
-        foregroundColor: Colors.red,
-        showProgressBar: false,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        borderRadius: BorderRadius.circular(12),
-        autoCloseDuration: const Duration(seconds: 3),
-      );
+     AppToast.showError( "Upload failed: $e");
 
       return null;
     }
@@ -118,38 +105,13 @@ class _ProfileUploadScreenState extends State<ProfileUploadScreen> {
       });
       ;
 
-      toastification.show(
-        context: context,
-        title: Text(
-          skip ? "Skipped profile upload" : "Profile updated",
-          style: const TextStyle(color: Colors.black),
-        ),
-        type: ToastificationType.success,
-        alignment: Alignment.topCenter,
-
-        showProgressBar: false,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        borderRadius: BorderRadius.circular(12),
-        autoCloseDuration: const Duration(seconds: 3),
-      );
-
+      AppToast.showSuccess(skip ? "Skipped profile upload" : "Profile updated");
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => HomeScreen(myId: uid)),
       );
     } catch (e) {
-      toastification.show(
-        context: context,
-        title: Text(e.toString(), style: const TextStyle(color: Colors.black)),
-        type: ToastificationType.error,
-        alignment: Alignment.topCenter,
-        backgroundColor: Colors.red,
-        foregroundColor: Colors.white,
-        showProgressBar: false,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        borderRadius: BorderRadius.circular(12),
-        autoCloseDuration: const Duration(seconds: 3),
-      );
+     AppToast.showError(e.toString());
     } finally {
       setState(() => loading = false);
     }
@@ -286,23 +248,7 @@ class _ProfileUploadScreenState extends State<ProfileUploadScreen> {
                 ElevatedButton(
                   onPressed: () async {
                     if (webImage == null && fileImage == null) {
-                      toastification.show(
-                        context: context,
-                        title: const Text(
-                          "Please select an image first.",
-                          style: TextStyle(color: Colors.black),
-                        ),
-                        type: ToastificationType.error,
-                        alignment: Alignment.topCenter,
-                        foregroundColor: Colors.red,
-                        showProgressBar: false,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 12,
-                        ),
-                        borderRadius: BorderRadius.circular(12),
-                        autoCloseDuration: const Duration(seconds: 3),
-                      );
+                      AppToast.showError("Please select an image first");
 
                       return;
                     }

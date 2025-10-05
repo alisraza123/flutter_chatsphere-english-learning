@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
 import '../services/call_service.dart';
-import 'package:firebase_database_platform_interface/firebase_database_platform_interface.dart';
 
 const String homeRoute = '/homepage';
 
@@ -49,6 +48,7 @@ class _CallScreenState extends State<CallScreen> {
    final status = event.snapshot.value;
    if (status == "ended" && !_isNavigating) {
     
+    // Cleanup on call end initiated by the other party
     await _performCleanupAndNavigate(context, isLocalEnder: false); 
    }
   });
@@ -84,6 +84,34 @@ class _CallScreenState extends State<CallScreen> {
   }
  }
  
+ // ******************************************************
+ // * Naya Function: Level Check aur Update (Generic for any user) *
+ // ******************************************************
+ Future<void> _checkAndUpdateLevelForUser(String userId) async {
+  try {
+   // 1. Get current talks count for the given userId
+   final snapshot = await dbRef.child("users/$userId").child("talks").get();
+   final currentTalks = (snapshot.value as int?) ?? 0;
+
+   // 2. Check if talks >= 10
+   if (currentTalks >= 10) {
+    
+    // 3. Get current level
+    final levelSnapshot = await dbRef.child("users/$userId").child("level").get();
+    final currentLevel = (levelSnapshot.value as int?) ?? 1;
+
+    // 4. If current level is less than 2, update it to 2
+    if (currentLevel < 2) {
+     
+     await dbRef.child("users/$userId").update({"level": 2});
+     debugPrint("User $userId's level updated to 2.");
+    }
+   }
+  } catch (e) {
+   debugPrint("Failed to check or update level for user $userId: $e");
+  }
+ }
+ // ******************************************************
 
  Future<void> _performCleanupAndNavigate(
   BuildContext context, {
@@ -141,6 +169,10 @@ class _CallScreenState extends State<CallScreen> {
   
   await _handleTalksIncrement(); 
   
+
+  await _checkAndUpdateLevelForUser(widget.myId); 
+  await _checkAndUpdateLevelForUser(widget.peerId); 
+  
   
   try {
    await dbRef.child("calls/${widget.callId}/status").set("ended");
@@ -191,7 +223,7 @@ class _CallScreenState extends State<CallScreen> {
     final avatarRadius = shortestSide * (isLandscape ? 0.15 : 0.20); 
 
   return Scaffold(
-   backgroundColor: Colors.black,
+   backgroundColor: Colors.white,
    body: SafeArea(
         child: isLandscape
             ? Column( 
@@ -231,15 +263,15 @@ class _CallScreenState extends State<CallScreen> {
                 ),
                 
                 const SizedBox(height: 8),
-                const Text(
-                    "On Call...",
-                    style: TextStyle(color: Colors.white70, fontSize: 16),
+                 CircleAvatar(
+                    radius: avatarRadius/3,
+                    backgroundImage: const AssetImage("assets/ali.gif"),           
                 ),
                 const SizedBox(height: 16),
                 Text(
                     _formatDuration(_seconds),
                     style: const TextStyle(
-                        color: Colors.white,
+                        color: Colors.black,
                         fontSize: 18,
                         fontWeight: FontWeight.w500,
                     ),
@@ -267,7 +299,7 @@ class _CallScreenState extends State<CallScreen> {
                                 icon: isMicOn ? Icons.mic : Icons.mic_off,
                                 iconColor: isMicOn ? Colors.white : Colors.red,
                                 bgColor: isMicOn
-                                    ? Colors.grey.withOpacity(0.2)
+                                    ? Colors.grey.withOpacity(0.8)
                                     : Colors.red.withOpacity(0.3),
                                 label: isMicOn ? "Mute" : "Unmute",
                                 onPressed: () async {
@@ -275,7 +307,6 @@ class _CallScreenState extends State<CallScreen> {
                                     setState(() {}); 
                                 },
                             ),
-
                             
                             _buildControlColumn(
                                 buttonSize: endCallButtonSize,
@@ -294,7 +325,7 @@ class _CallScreenState extends State<CallScreen> {
                                 iconColor: isSpeakerOn ? Colors.green : Colors.white,
                                 bgColor: isSpeakerOn
                                     ? Colors.green.withOpacity(0.3)
-                                    : Colors.grey.withOpacity(0.2),
+                                    : Colors.grey.withOpacity(0.8),
                                 label: "Speaker",
                                 onPressed: () async {
                                     await widget.callService.toggleSpeaker();

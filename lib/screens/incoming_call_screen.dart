@@ -83,12 +83,20 @@ class _IncomingCallScreenState extends State<IncomingCallScreen> {
 
     final remoteId = data["callerId"] as String;
 
+    // Mark status in DB
     await dbRef.child("calls/${widget.callId}/status").set("accepted");
     await dbRef.child("users/${widget.myId}").update({"callStatus": "on_call"});
 
+    // ✅ Init mic+camera before moving to CallScreen
     await widget.callService.initLocalMedia();
-    await widget.callService.createRoomConnection(widget.callId, isCaller: false);
 
+    // ✅ Create Answer in Firebase
+    await widget.callService.createRoomConnection(
+      widget.callId,
+      isCaller: false,
+    );
+
+    // ✅ Only after offer/answer is set → move to call screen
     if (mounted) {
       Navigator.pushReplacement(
         context,
@@ -109,17 +117,28 @@ class _IncomingCallScreenState extends State<IncomingCallScreen> {
     return PopScope(
       canPop: false,
       child: Scaffold(
-        backgroundColor: Colors.black,
-        body: Center(
+        // --- 1. Background Color Change ---
+        backgroundColor: Colors.white, 
+        // ----------------------------------
+        body: Padding(
+          padding: const EdgeInsets.only(bottom: 40.0), // Padding to lift the buttons up
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+            // --- Content Alignment Change ---
+            mainAxisAlignment: MainAxisAlignment.end, 
+            // --------------------------------
             children: [
+              
+              // Top Content (Pushed up by MainAxisAlignment.end and Spacer)
+              const Spacer(flex: 1), 
+              
               Lottie.asset('assets/calling.json', width: 200, height: 200),
               const SizedBox(height: 20),
               const Text(
                 "Incoming Call",
                 style: TextStyle(
-                  color: Colors.white,
+                  // --- Text Color Change for White BG ---
+                  color: Colors.black87, 
+                  // -------------------------------------
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
                 ),
@@ -127,12 +146,21 @@ class _IncomingCallScreenState extends State<IncomingCallScreen> {
               const SizedBox(height: 10),
               const Text(
                 "You have a new call...",
-                style: TextStyle(color: Colors.white70, fontSize: 16),
+                style: TextStyle(
+                  // --- Text Color Change for White BG ---
+                  color: Colors.grey, 
+                  // -------------------------------------
+                  fontSize: 16
+                ),
               ),
-              const SizedBox(height: 80),
+              
+              const Spacer(flex: 1), // Spacer to push the buttons down slightly less
+              
+              // Buttons Row
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
+                  // Reject Button
                   Column(
                     children: [
                       FloatingActionButton(
@@ -142,19 +170,33 @@ class _IncomingCallScreenState extends State<IncomingCallScreen> {
                         child: const Icon(Icons.call_end, size: 32, color: Colors.white),
                       ),
                       const SizedBox(height: 8),
-                      const Text("Reject", style: TextStyle(color: Colors.white)),
+                      const Text(
+                        "Reject", 
+                        style: TextStyle(
+                          color: Colors.black87, // Color adjusted for white BG
+                          fontWeight: FontWeight.w600,
+                        )
+                      ),
                     ],
                   ),
+                  
+                  // Accept Button
                   Column(
                     children: [
                       FloatingActionButton(
                         heroTag: "accept",
-                        backgroundColor: Color(0xFF1ea5fe),
+                        backgroundColor: const Color(0xFF1ea5fe),
                         onPressed: acceptCall,
                         child: const Icon(Icons.call, size: 32, color: Colors.white),
                       ),
                       const SizedBox(height: 8),
-                      const Text("Accept", style: TextStyle(color: Colors.white)),
+                      const Text(
+                        "Accept", 
+                        style: TextStyle(
+                          color: Colors.black87, // Color adjusted for white BG
+                          fontWeight: FontWeight.w600,
+                        )
+                      ),
                     ],
                   ),
                 ],

@@ -1,8 +1,8 @@
+import 'package:chatsphere/appToast/appToast.dart';
 import 'package:chatsphere/screens/profile_upload_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
-
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
 
@@ -29,15 +29,6 @@ class ProfileScreen extends StatelessWidget {
       body: FutureBuilder<Map<String, dynamic>?>(
         future: _fetchUserData(),
         builder: (context, snapshot) {
-          
-          
-          
-          
-          
-          
-          
-          
-
           if (!snapshot.hasData || snapshot.data == null) {
             return Center(
               child: Text(
@@ -130,11 +121,9 @@ class ProfileScreen extends StatelessWidget {
                                     child: CircleAvatar(
                                       backgroundColor: Colors.white,
                                       backgroundImage: imageUrl.isNotEmpty
-                                          ? NetworkImage(imageUrl)
-                                          : const AssetImage(
-                                                  "assets/default_avatar.png",
-                                                )
-                                                as ImageProvider,
+    ? NetworkImage(imageUrl)
+    : const AssetImage("assets/profile.png"),
+
                                     ),
                                   ),
                                 ),
@@ -143,48 +132,66 @@ class ProfileScreen extends StatelessWidget {
                           ),
                           SizedBox(height: 20),
 
-                          
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Flexible(
-                                child: Text(
-                                  name,
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    fontSize: isPortrait
-                                        ? constraints.maxWidth * 0.065
-                                        : constraints.maxHeight * 0.055,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                  ),
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                              SizedBox(width: 10),
-                              Container(
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.2),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: IconButton(
-                                  icon: Icon(
-                                    Icons.edit,
-                                    size: 20,
-                                    color: Colors.white,
-                                  ),
-                                  onPressed: () {
-                                    _showEditDialog(
-                                      context,
-                                      "Edit Name",
-                                      "Enter new name",
-                                    );
-                                  },
-                                ),
-                              ),
-                            ],
-                          ),
+          Row(
+  mainAxisAlignment: MainAxisAlignment.center,
+  children: [
+    Flexible(
+      child: StreamBuilder(
+        stream: FirebaseDatabase.instance
+            .ref("users/${FirebaseAuth.instance.currentUser!.uid}")
+            .onValue,
+        builder: (context, snapshot) {
+          if (snapshot.hasData &&
+              (snapshot.data! as DatabaseEvent).snapshot.value != null) {
+            Map userData =
+                (snapshot.data! as DatabaseEvent).snapshot.value as Map;
+            String updatedName = userData["name"] ?? "No Name";
+            return Text(
+              updatedName,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: isPortrait
+                    ? constraints.maxWidth * 0.065
+                    : constraints.maxHeight * 0.055,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            );
+          }
+          return Text(
+            "Loading...",
+            style: TextStyle(color: Colors.white),
+          );
+        },
+      ),
+    ),
+    SizedBox(width: 10),
+    Container(
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.2),
+        shape: BoxShape.circle,
+      ),
+      child: IconButton(
+        icon: Icon(
+          Icons.edit,
+          size: 20,
+          color: Colors.white,
+        ),
+        onPressed: () {
+          _showEditDialog(
+            context,
+            "Edit Name",
+            "Enter new name",
+          );
+        },
+      ),
+    ),
+  ],
+)
+,
+
                           SizedBox(height: 8),
 
                           
@@ -421,33 +428,36 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildStatItem(String title, String value, IconData icon) {
-    return Column(
-      children: [
-        Container(
-          padding: EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Color(0xFF1ea5fe).withOpacity(0.1),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(icon, color: Color(0xFF1ea5fe), size: 24),
+Widget _buildStatItem(String title, String value, IconData icon) {
+  final isLevelStar = title == "Level" && value == "2";
+  final iconColor = isLevelStar ? Colors.amber : const Color(0xFF1ea5fe);
+
+  return Column(
+    children: [
+      Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: iconColor.withOpacity(0.1),
+          shape: BoxShape.circle,
         ),
-        SizedBox(height: 8),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF1ea5fe),
-          ),
+        child: Icon(icon, color: iconColor, size: 24),
+      ),
+      const SizedBox(height: 8),
+      Text(
+        value,
+        style: TextStyle(
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
+          color: iconColor,
         ),
-        Text(
-          title,
-          style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
-        ),
-      ],
-    );
-  }
+      ),
+      Text(
+        title,
+        style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+      ),
+    ],
+  );
+}
 
   
   Widget _buildInfoSection(
@@ -562,10 +572,25 @@ class ProfileScreen extends StatelessWidget {
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                      onPressed: () {
-                        debugPrint("$title: ${controller.text}");
-                        Navigator.pop(context);
-                      },
+                      onPressed: () async {
+  try {
+    final user = FirebaseAuth.instance.currentUser!.uid;
+
+       FirebaseDatabase.instance.ref("users/$user").update({
+    "name":controller.text
+  });
+
+     
+
+      Navigator.pop(context); // dialog band karo
+
+      AppToast.showInfo("Name successfully changed");
+  } catch (e) {
+    debugPrint("Error updating name: $e");
+    AppToast.showError("Error updating name $e");
+  }
+},
+
                       child: Text("OK"),
                     ),
                   ],
